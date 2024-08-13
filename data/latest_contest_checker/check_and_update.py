@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -51,25 +52,39 @@ def get_latest_contest_slug():
 
 
 def handler(event, context):
+    latest_contest_slug = get_latest_contest_slug()
+
     table_name = os.getenv("PROCESSED_CONTEST_SLUGS_TABLE_NAME")
     if not table_name:
-        logger.error(
+        logger.warn(
             "Could not find environment variable PROCESSED_CONTEST_SLUGS_TABLE_NAME"
         )
-        sys.exit(2)
-    latest_contest_slug = get_latest_contest_slug()
+        logger.info(f"Latest contest slug: {latest_contest_slug}")
+        return {}
+
     dynamo = boto3.client("dynamodb")
     response = dynamo.get_item(
         TableName=table_name, Key={"ContestSlug": {"S": latest_contest_slug}}
     )
-    if "Item" not in response:
-        print(f"{latest_contest_slug} not in table. Inserting!")
-        dynamo.put_item(
-            TableName=table_name, Item={"ContestSlug": {"S": latest_contest_slug}}
-        )
-    else:
-        print(f"{latest_contest_slug} already in table. Skipping!")
-    return {"slug": latest_contest_slug}
+    if "Item" in response:
+        logger.debug(f"{latest_contest_slug} already in table.")
+        return {}
+    logger.debug(f"{latest_contest_slug} not in table, inserting it")
+    dynamo.put_item(
+        TableName=table_name, Item={"ContestSlug": {"S": latest_contest_slug}}
+    )
+
+    unprocessed_contests_queue = os.getenv("UNPROCESSED_CONTESTS_QUEUE")
+    if not unprocessed_contests_queue:
+        logger.warn("Could not find environment variable UNPROCESSED_CONTESTS_QUEUE")
+        return {}
+    sqs = boto3.client("sqs")
+    sqs.send_message(
+        QueueUrl=unprocessed_contests_queue,
+        MessageBody=json.dumps({"contest-slug": latest_contest_slug}),
+    )
+    logger.debug(f"Sent {latest_contest_slug} to {unprocessed_contests_queue}")
+    return {}
 
 
 if __name__ == "__main__":

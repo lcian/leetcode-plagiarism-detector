@@ -1,10 +1,17 @@
 {
     "semi": true,
     "singleQuote": false,
+    "printWidth": 120,
     "tabWidth": 4,
     "trailingComma": "all",
-    "plugins": ["@trivago/prettier-plugin-sort-imports"],
-    "importOrder": ["^aws-cdk-lib(.*)$", "^@(.*)$", "^[./]"],
+    "plugins": [
+        "@trivago/prettier-plugin-sort-imports"
+    ],
+    "importOrder": [
+        "^aws-cdk-lib(.*)$",
+        "^@(.*)$",
+        "^[./]"
+    ],
     "importOrderSeparation": true,
     "importOrderSortSpecifiers": true
 }
