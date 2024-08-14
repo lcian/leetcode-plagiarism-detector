@@ -1,0 +1,3 @@
+boto3==1.34.158
+botocore==1.34.158
+beautifulsoup4==4.12.3

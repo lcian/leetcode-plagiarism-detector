@@ -7,11 +7,11 @@ import urllib.request
 import boto3
 from bs4 import BeautifulSoup
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-CONTEST_URL = "https://leetcode.com/contest/"
-CONTEST_API_URL = "https://leetcode.com/contest/api/ranking/weekly-contest-399"
+CONTEST_URL = "https://leetcode.com/contest"
 HEADERS = {
     "accept": "application/json, text/javascript, */*; q=0.01",
     "accept-language": "en-US,en;q=0.9",
@@ -30,7 +30,7 @@ HEADERS = {
     "sec-fetch-site": "same-origin",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest",
-    "referer": "https://leetcode.com/contest/",
+    "referer": "https://leetcode.com/contest",
 }
 
 
@@ -67,9 +67,9 @@ def handler(event, context):
         TableName=table_name, Key={"ContestSlug": {"S": latest_contest_slug}}
     )
     if "Item" in response:
-        logger.debug(f"{latest_contest_slug} already in table.")
+        logger.info(f"{latest_contest_slug} already in table.")
         return {}
-    logger.debug(f"{latest_contest_slug} not in table, inserting it")
+    logger.info(f"{latest_contest_slug} not in table, inserting it")
     dynamo.put_item(
         TableName=table_name, Item={"ContestSlug": {"S": latest_contest_slug}}
     )
@@ -83,7 +83,7 @@ def handler(event, context):
         QueueUrl=unprocessed_contests_queue,
         MessageBody=json.dumps({"contest-slug": latest_contest_slug}),
     )
-    logger.debug(f"Sent {latest_contest_slug} to {unprocessed_contests_queue}")
+    logger.info(f"Sent {latest_contest_slug} to {unprocessed_contests_queue}")
     return {}
 
 
