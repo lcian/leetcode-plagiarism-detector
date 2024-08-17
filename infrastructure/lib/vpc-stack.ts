@@ -33,11 +33,7 @@ export class VpcStack extends cdk.Stack {
             vpc: this.vpc,
             allowAllOutbound: true,
         });
-        this.securityGroup.addIngressRule(
-            this.securityGroup,
-            ec2.Port.allTraffic(),
-        );
-        this.securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22));
+        this.securityGroup.addIngressRule(this.securityGroup, ec2.Port.allTraffic());
 
         const keyPair = new ec2.KeyPair(this, "KeyPair", {});
         const natInstance = new ec2.Instance(this, "NatInstance", {
@@ -48,18 +44,13 @@ export class VpcStack extends cdk.Stack {
             securityGroup: this.securityGroup,
             keyPair: keyPair,
             sourceDestCheck: false,
-            instanceType: ec2.InstanceType.of(
-                ec2.InstanceClass.T2,
-                ec2.InstanceSize.MICRO,
-            ),
-            machineImage: new ec2.AmazonLinuxImage({
-                generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
-            }),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
+            machineImage: ec2.MachineImage.genericLinux({ "eu-central-1": "ami-07652eda1fbad7432" }), // Ubuntu Server 22.04 LTS
             userData: ec2.UserData.custom(`#!/bin/sh
-                # install and enable iptables
-                yum install iptables-services -y
-                systemctl enable iptables
-                systemctl start iptables
+                sudo apt-get update
+                sudo apt-get install iptables-persistent -y
+                sudo systemctl enable iptables
+                sudo systemctl start iptables
 
                 # enable ipv4 forwarding
                 echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
@@ -68,11 +59,14 @@ export class VpcStack extends cdk.Stack {
                 # enable nat
                 INTERFACE=\`ip a | grep UP | grep -v lo | cut -f 2 -d' ' | cut -f 1 -d':'\`
                 sudo iptables -t nat -A POSTROUTING -o $INTERFACE -s 0.0.0.0/0 -j MASQUERADE
-                sudo /sbin/iptables -F FORWARD
+                sudo iptables -F FORWARD
 
-                sudo service iptables save
+                sudo iptables-save | sudo tee /etc/iptables/rules.v4
+                sudo ip6tables-save | sudo tee /etc/iptables/rules.v6
             `),
         });
+        natInstance.connections.allowFromAnyIpv4(ec2.Port.tcp(22));
+        natInstance.connections.allowFromAnyIpv4(ec2.Port.udp(51820));
 
         this.vpc.privateSubnets.forEach((subnet) => {
             new ec2.CfnRoute(this, `RouteToNatInstance-${subnet.node.id}`, {

@@ -7,8 +7,8 @@ import urllib.request
 import boto3
 from bs4 import BeautifulSoup
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("latest_contest_checker")
 logger.setLevel(logging.DEBUG)
 
 CONTEST_URL = "https://leetcode.com/contest"
@@ -44,9 +44,7 @@ def get_latest_contest_slug():
         logger.error("Failed to get latest contest slug: unable to find element")
         sys.exit(2)
     if "data-contest-title-slug" not in element[0].attrs:
-        logger.error(
-            "Failed to get latest contest slug: slug not in element attributes"
-        )
+        logger.error("Failed to get latest contest slug: slug not in element attributes")
         sys.exit(2)
     return element[0].get("data-contest-title-slug")
 
@@ -56,23 +54,17 @@ def handler(event, context):
 
     table_name = os.getenv("PROCESSED_CONTEST_SLUGS_TABLE_NAME")
     if not table_name:
-        logger.warn(
-            "Could not find environment variable PROCESSED_CONTEST_SLUGS_TABLE_NAME"
-        )
+        logger.warn("Could not find environment variable PROCESSED_CONTEST_SLUGS_TABLE_NAME")
         logger.info(f"Latest contest slug: {latest_contest_slug}")
         return {}
 
     dynamo = boto3.client("dynamodb")
-    response = dynamo.get_item(
-        TableName=table_name, Key={"ContestSlug": {"S": latest_contest_slug}}
-    )
+    response = dynamo.get_item(TableName=table_name, Key={"ContestSlug": {"S": latest_contest_slug}})
     if "Item" in response:
         logger.info(f"{latest_contest_slug} already in table.")
         return {}
     logger.info(f"{latest_contest_slug} not in table, inserting it")
-    dynamo.put_item(
-        TableName=table_name, Item={"ContestSlug": {"S": latest_contest_slug}}
-    )
+    dynamo.put_item(TableName=table_name, Item={"ContestSlug": {"S": latest_contest_slug}})
 
     unprocessed_contests_queue = os.getenv("UNPROCESSED_CONTESTS_QUEUE")
     if not unprocessed_contests_queue:

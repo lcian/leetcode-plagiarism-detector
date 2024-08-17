@@ -1,1 +1,3 @@
-.envrc
+**/.env
+**/.envrc
+**/__pycache__

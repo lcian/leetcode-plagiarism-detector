@@ -28,11 +28,19 @@ export class DataStack extends cdk.Stack {
             removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
         });
 
+        const ecsCluster = new ecs.Cluster(this, "Cluster", {
+            vpc: props.vpc,
+        });
+        ecsCluster.connections.addSecurityGroup(props.securityGroup);
+
         const contestSubmissionsScraper = new ecsPatterns.QueueProcessingFargateService(
             this,
             "QueueProcessingFargateService",
             {
-                memoryLimitMiB: 512,
+                cluster: ecsCluster,
+                taskSubnets: props.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
+                assignPublicIp: true,
+                memoryLimitMiB: 1024,
                 cpu: 256,
                 image: ecs.ContainerImage.fromAsset("../data/contest_submissions_scraper/"),
                 environment: {
@@ -42,10 +50,15 @@ export class DataStack extends cdk.Stack {
                     { upper: 0, change: -1 },
                     { lower: 1, change: +1 },
                 ],
-                maxScalingCapacity: 1,
                 minScalingCapacity: 0,
+                maxScalingCapacity: 1,
                 capacityProviderStrategies: [{ capacityProvider: "FARGATE_SPOT", weight: 1 }],
             },
+        );
+
+        contestSubmissionsScraper.service.connections.allowFrom(
+            ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+            ec2.Port.allTraffic(),
         );
         contestSubmissionsBucket.grantReadWrite(contestSubmissionsScraper.taskDefinition.taskRole);
 
