@@ -10,6 +10,7 @@ import * as eventsTargets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 import { PythonFunction } from "@aws-cdk/aws-lambda-python-alpha";
 
@@ -33,6 +34,9 @@ export class DataStack extends cdk.Stack {
         });
         ecsCluster.connections.addSecurityGroup(props.securityGroup);
 
+        const oxylabsCredentials = ssm.StringParameter.fromSecureStringParameterAttributes(this, "OxylabsCredentials", {
+            parameterName: "/leetcode-cheater-detector/oxylabs-credentials",
+        });
         const contestSubmissionsScraper = new ecsPatterns.QueueProcessingFargateService(
             this,
             "QueueProcessingFargateService",
@@ -45,6 +49,10 @@ export class DataStack extends cdk.Stack {
                 image: ecs.ContainerImage.fromAsset("../data/contest_submissions_scraper/"),
                 environment: {
                     CONTEST_SUBMISSIONS_BUCKET_NAME: contestSubmissionsBucket.bucketName,
+                    LOG_LEVEL: "DEBUG",
+                },
+                secrets: {
+                    OXYLABS_CREDENTIALS: ecs.Secret.fromSsmParameter(oxylabsCredentials),
                 },
                 scalingSteps: [
                     { upper: 0, change: -1 },
@@ -55,6 +63,7 @@ export class DataStack extends cdk.Stack {
                 capacityProviderStrategies: [{ capacityProvider: "FARGATE_SPOT", weight: 1 }],
             },
         );
+        oxylabsCredentials.grantRead(contestSubmissionsScraper.taskDefinition.taskRole);
 
         contestSubmissionsScraper.service.connections.allowFrom(
             ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
@@ -102,6 +111,7 @@ export class DataStack extends cdk.Stack {
             environment: {
                 PROCESSED_CONTEST_SLUGS_TABLE_NAME: processedContestSlugsTable.tableName,
                 UNPROCESSED_CONTESTS_QUEUE: contestSubmissionsScraper.sqsQueue.queueUrl,
+                LOG_LEVEL: "DEBUG",
             },
             timeout: cdk.Duration.seconds(30),
         });

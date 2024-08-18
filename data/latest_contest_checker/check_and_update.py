@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("latest_contest_checker")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(os.getenv("LOG_LEVEL") or logging.INFO)
 
 CONTEST_URL = "https://leetcode.com/contest"
 HEADERS = {

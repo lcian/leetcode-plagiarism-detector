@@ -4,3 +4,4 @@ beautifulsoup4==4.12.3
 requests==2.31.0
 pandas==2.2.2
 awswrangler==3.9.0
+random-user-agent==1.0.1

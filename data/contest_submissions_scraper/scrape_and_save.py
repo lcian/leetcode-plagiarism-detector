@@ -1,65 +1,100 @@
 import concurrent.futures
 import json
 import logging
+import math
 import os
+import sys
 import urllib.request
+from time import sleep
+from typing import List
 
 import awswrangler as wr
 import boto3
 import pandas as pd
+from random_user_agent.params import OperatingSystem, SoftwareName
+from random_user_agent.user_agent import UserAgent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("contest_submissions_scraper")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(os.getenv("LOG_LEVEL") or logging.INFO)
 
-NUM_WORKERS = 10
-
+CONTEST_BASE_URL = "https://leetcode.com/contest"
 CONTEST_API_URL = "https://leetcode.com/contest/api/ranking"
 SUBMISSIONS_API_URL = "https://leetcode.com/api/submissions"
 HEADERS = {
     "accept": "application/json, text/javascript, */*; q=0.01",
     "accept-language": "en-US,en;q=0.9",
     "content-type": "application/json",
-    "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-    "sec-ch-ua-arch": '"x86"',
-    "sec-ch-ua-bitness": '"64"',
-    "sec-ch-ua-full-version": '"126.0.6478.127"',
-    "sec-ch-ua-full-version-list": '"Not/A)Brand";v="8.0.0.0", "Chromium";v="126.0.6478.127", "Google Chrome";v="126.0.6478.127"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-model": '""',
-    "sec-ch-ua-platform": '"Windows"',
-    "sec-ch-ua-platform-version": '"15.0.0"',
     "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest",
     "referer": "https://leetcode.com/contest",
 }
 
+NUM_WORKERS = 10
+PAGE_LIMIT = os.getenv("PAGE_LIMIT") or math.inf
+MAX_RETRIES = 10
+REQUEST_TIMEOUT_SEC = 15
+
+OXYLABS_CREDENTIALS = os.getenv("OXYLABS_CREDENTIALS")
+
+_browsers = [SoftwareName.CHROME.value]
+_oss = [OperatingSystem.WINDOWS.value]
+USER_AGENT_ROTATOR = UserAgent(software_names=_browsers, operating_systems=_oss, limit=100)
+
+
+def get(url, headers_override=None) -> dict:
+    headers_override = headers_override or {}
+    headers = HEADERS.copy()
+    for k in headers_override:
+        headers[k] = headers_override[k]
+    for i in range(MAX_RETRIES):
+        try:
+            headers["user-agent"] = USER_AGENT_ROTATOR.get_random_user_agent()
+            if not OXYLABS_CREDENTIALS:
+                request = urllib.request.Request(url, headers=headers)
+                response = urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SEC)
+                return json.loads(response.read().decode())
+            else:
+                proxy_url = f"http://customer-{OXYLABS_CREDENTIALS}@pr.oxylabs.io:7777"
+                proxy = urllib.request.ProxyHandler(
+                    {
+                        "http": proxy_url,
+                        "https": proxy_url,
+                    }
+                )
+                opener = urllib.request.build_opener(proxy)
+                request = urllib.request.Request(url, headers=headers)
+                response = opener.open(request, timeout=REQUEST_TIMEOUT_SEC)
+                return json.loads(response.read().decode())
+        except Exception as e:
+            logger.error(f"Failed to fetch {url} (try {i})")
+            sleep(1)
+    logger.error(f"Something went wrong, could not fetch {url} for {MAX_RETRIES} times, exiting")
+    sys.exit(1)
+
 
 def get_questions(contest_slug):
-    request = urllib.request.Request(
-        f"{CONTEST_API_URL}/{contest_slug}?pagination=0&region=global",
-        headers=HEADERS,
+    response = get(
+        f"{CONTEST_API_URL}/{contest_slug}/?pagination=1&region=global",
+        {"Referer": f"{CONTEST_BASE_URL}/{contest_slug}/ranking/1/"},
     )
-    response = urllib.request.urlopen(request)
-    response = json.loads(response.read().decode())
     return response["questions"]
 
 
-def get_submission_with_code(submission_id):
-    try:
-        request = urllib.request.Request(
-            f"{SUBMISSIONS_API_URL}/{submission_id}",
-            headers=HEADERS,
-        )
-        response = urllib.request.urlopen(request)
-        response = json.loads(response.read().decode())
-    except Exception as e:
-        logger.error(f"Failed to fetch submission {submission_id}", exc_info=e)
-        return {}
-    return response
+def get_submissions(contest_slug, page):
+    return get(
+        f"{CONTEST_API_URL}/{contest_slug}/?pagination={page}&region=global",
+        {"Referer": f"{CONTEST_BASE_URL}/{contest_slug}/ranking/{page}/"},
+    )
+
+
+def get_submission_with_code(submission_id, contest_slug, page):
+    return get(
+        f"{SUBMISSIONS_API_URL}/{submission_id}",
+        {"Referer": f"{CONTEST_BASE_URL}/{contest_slug}/ranking/{page}/"},
+    )
 
 
 def save_s3(df: pd.DataFrame, contest_slug: str, bucket_name: str):
@@ -73,40 +108,33 @@ def save_local(df: pd.DataFrame):
     df.to_csv("submissions.csv", index=False)
 
 
-def get_submissions(contest_slug: str) -> pd.DataFrame:
+def get_all_submissions(contest_slug: str, question_ids: List[str]) -> pd.DataFrame:
     logger.info(f"Fetching submissions for contest {contest_slug}")
     submissions = []
-    i = 0
+    i = 1
     while True:
-        request = urllib.request.Request(
-            f"{CONTEST_API_URL}/{contest_slug}?pagination={i}&region=global",
-            headers=HEADERS,
-        )
-        try:
-            response = urllib.request.urlopen(request)
-        except Exception as e:
-            logger.error(f"Failed to fetch page {i}", exc_info=e)
-            i += 1
-            continue
-        response = json.loads(response.read().decode())
-        if not response["submissions"]:  # empty submissions = pages are over
+        response = get_submissions(contest_slug, i)
+        if i == PAGE_LIMIT or not response["submissions"]:  # pages are over
             break
         logger.info(f"Processing page {i}")
-        page_submissions = sum(  # flatten
-            [
-                list(user_submissions.values())  # grab the submissions
-                for user_submissions in response["submissions"]  # array of dicts { question_id: submission }
-            ],  # type: ignore
-            [],
-        )
-        page_submissions = [
-            submission for submission in page_submissions if submission["data_region"] != "CN"
-        ]  # only leetcode.com from this endpoint
+        page_submissions = []
+        count = 0
+        for user_submissions in response["submissions"]:
+            for question_id in user_submissions:
+                if int(question_id) not in question_ids:
+                    continue
+                count += 1
+                if user_submissions[question_id]["data_region"] == "CN":
+                    continue
+                page_submissions.append(user_submissions[question_id])
+        # 0 submissions for the problems we are interested in (in practice, Q3 and Q4, hence we can stop here)
+        if count == 0:
+            break
         with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
             for submission, code in zip(
                 page_submissions,
                 executor.map(
-                    get_submission_with_code,
+                    lambda id: get_submission_with_code(id, contest_slug, i),
                     [sub["submission_id"] for sub in page_submissions],
                 ),
             ):
@@ -114,14 +142,20 @@ def get_submissions(contest_slug: str) -> pd.DataFrame:
                     submission["lang"] = code["lang"]
                     submission["code"] = code["code"]
                     submissions.append(submission)
+        logger.info(f"Fetched {len(page_submissions)} submissions from page {i}")
         i += 1
     return pd.DataFrame(submissions)
 
 
 def process_contest(contest_slug: str):
     logger.info(f"Processing contest {contest_slug}")
-    submissions = get_submissions(contest_slug)
+    questions = get_questions(contest_slug)
+    question_ids = [question["question_id"] for question in questions]
+    question_ids.sort(key=lambda x: int(x))
+    question_ids = question_ids[2:]
+    submissions = get_all_submissions(contest_slug, question_ids)
     bucket = os.getenv("CONTEST_SUBMISSIONS_BUCKET_NAME")
+    logger.info(f"Saving {len(submissions)} records")
     if bucket:
         save_s3(submissions, contest_slug, bucket)
     else:
