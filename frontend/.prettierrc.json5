@@ -1,0 +1,26 @@
+{
+    trailingComma: "all",
+    tabWidth: 4,
+    printWidth: 120,
+    useTabs: false,
+    semi: true,
+    singleQuote: false,
+    bracketSpacing: true,
+    arrowParens: "always",
+    endOfLine: "lf",
+    tailwindConfig: "./tailwind.config.js",
+    tailwindAttributes: ["wrapperClassName", "wrapClassName", "rootClassName"],
+    tailwindFunctions: ["classNames", "classnames", "twMerge"],
+    overrides: [
+        {
+            files: ".prettierrc",
+            options: {
+                parser: "json",
+            },
+        },
+    ],
+    plugins: ["prettier-plugin-tailwindcss", "@trivago/prettier-plugin-sort-imports"],
+    importOrder: ["^@core/(.*)$", "^@server/(.*)$", "^@ui/(.*)$", "^[./]"],
+    importOrderSeparation: true,
+    importOrderSortSpecifiers: true,
+}
