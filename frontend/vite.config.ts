@@ -12,7 +12,7 @@ export default defineConfig({
         },
     },
     server: {
-        proxy: {
+        proxy: process.env.NODE_ENV === "development" && {
             "/api": {
                 target: "http://localhost:8080",
                 changeOrigin: true,

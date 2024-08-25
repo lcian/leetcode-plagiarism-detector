@@ -106,6 +106,35 @@
 					<apiDocsUrl>http://localhost:8080/api/v1/v3/api-docs</apiDocsUrl>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>1.9.1</version>
+				<executions>
+					<execution>
+						<id>install node and npm</id>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+						<phase>generate-resources</phase>
+					</execution>
+					<execution>
+						<id>vite build</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<arguments>run build</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			<configuration>
+				<workingDirectory>../frontend</workingDirectory>
+				<nodeVersion>v20.16.0</nodeVersion>
+				<installDirectory>target</installDirectory>
+			</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>

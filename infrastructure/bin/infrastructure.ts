@@ -3,17 +3,14 @@ import "source-map-support/register";
 
 import * as cdk from "aws-cdk-lib";
 
-import { DataStack } from "../lib/data-stack";
-import { VpcStack } from "../lib/vpc-stack";
+import { ApplicationStack } from "../lib/application-stack";
+import { InfrastructureStack } from "../lib/infrastructure-stack";
 
 const app = new cdk.App();
 
-const vpcStack = new VpcStack(app, "VpcStack", {});
-new DataStack(app, "DataStack", {
-    vpc: vpcStack.vpc,
-    securityGroup: vpcStack.securityGroup,
+const infrastructureStack = new InfrastructureStack(app, "InfrastructureStack", {});
+new ApplicationStack(app, "ApplicationStack", {
+    vpc: infrastructureStack.vpc,
 });
 
-cdk.Aspects.of(app).add(
-    new cdk.Tag("AppManagerCFNStackKey", "leetcode-cheater-detector"),
-);
+cdk.Aspects.of(app).add(new cdk.Tag("AppManagerCFNStackKey", "leetcode-plagiarism-detector"));
