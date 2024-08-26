@@ -1,20 +1,29 @@
-FROM openjdk:22-slim
-RUN addgroup --system spring && adduser --system --ingroup spring --home /home/spring spring
+FROM node:20-slim AS node
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+COPY frontend/ /frontend
 WORKDIR /frontend
-COPY frontend/ ./
- 
-WORKDIR /backend
-COPY backend/.mvn/ ./.mvn/
-COPY backend/mvnw backend/pom.xml ./
+
+FROM node AS frontend
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
+
+FROM openjdk:22-slim AS backend
+WORKDIR /app
+
+COPY backend/.mvn/ .mvn/
+COPY backend/mvnw ./
+COPY backend/pom.xml ./
 COPY backend/src ./src/
+COPY --from=frontend /frontend/dist/ ./src/main/resources/static/
+RUN ./mvnw package -Dmaven.test.skip
 
-RUN ./mvnw generate-resources
-RUN cp -r ../frontend/dist/* ./src/main/resources/static/
-
-RUN chown -R spring:spring /backend
-RUN chown -R spring:spring /frontend
+FROM openjdk:22-slim
+WORKDIR /app
+COPY --from=backend /app/target/*.jar app.jar
+RUN addgroup --system spring && adduser --system --ingroup spring --home /home/spring spring
 USER spring:spring
 EXPOSE 80
-
-ENTRYPOINT ["./mvnw", "spring-boot:run"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
