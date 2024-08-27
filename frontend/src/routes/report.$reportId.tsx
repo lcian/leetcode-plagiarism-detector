@@ -116,14 +116,6 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                                                             <p className="my-auto">
                                                                 {timestampToDate(submission.date)}
                                                             </p>
-                                                            <Button variant="outline" size="sm" onClick={() => {}}>
-                                                                <FileCode className="h-4 w-4 mr-2" />
-                                                                Show code
-                                                            </Button>
-                                                            <Button variant="outline" size="sm" onClick={() => {}}>
-                                                                <GitCompareArrows className="h-4 w-4 mr-2" />
-                                                                Compare
-                                                            </Button>
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
@@ -210,31 +202,27 @@ function Report() {
             .then((res) => res.json())
             .then((detectorRun: DetectorRun) => {
                 setDetectorRun(detectorRun);
-                console.log(detectorRun);
-                fetch(`/api/v1/plagiarismsMetadata?detectorRunId=${detectorRun.id}`)
-                    .then((res) => res.json())
-                    .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
-                        plagiarismsMetadata.sort((a, b) =>
-                            a.numberOfSubmissions < b.numberOfSubmissions ||
-                            (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
-                                ? 1
-                                : -1,
-                        );
-                        setPlagiarismsMetadata(plagiarismsMetadata);
-                        console.log(plagiarismsMetadata);
-                        fetch(`/api/v1/question/${detectorRun.questionId}`)
-                            .then((res) => res.json())
-                            .then((question) => {
-                                setQuestion(question);
-                                console.log(question);
-                                fetch(`/api/v1/contest/${question.contestId}`)
-                                    .then((res) => res.json())
-                                    .then((contest) => {
-                                        setContest(contest);
-                                        console.log(contest);
-                                    });
-                            });
-                    });
+                return fetch(`/api/v1/plagiarismsMetadata?detectorRunId=${detectorRun.id}`);
+            })
+            .then((res) => res.json())
+            .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
+                plagiarismsMetadata.sort((a, b) =>
+                    a.numberOfSubmissions < b.numberOfSubmissions ||
+                    (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
+                        ? 1
+                        : -1,
+                );
+                setPlagiarismsMetadata(plagiarismsMetadata);
+                return fetch(`/api/v1/question/${detectorRun!.questionId}`);
+            })
+            .then((res) => res.json())
+            .then((question) => {
+                setQuestion(question);
+                return fetch(`/api/v1/contest/${question.contestId}`);
+            })
+            .then((res) => res.json())
+            .then((contest) => {
+                setContest(contest);
             });
     }, []);
 
@@ -303,67 +291,4 @@ function Report() {
             <LoadingSpinner size={100} />
         </div>
     );
-
-    //const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-
-    //const toggleGroup = (groupId: string) => {
-    //    setExpandedGroups((prev) =>
-    //        prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId],
-    //    );
-    //};
-
-    //return (
-
-    //        {groups.map((group) => (
-    //            <Card key={group.id} className="mb-4">
-    //                <CardHeader>
-    //                    <CardTitle className="flex items-center justify-between">
-    //                        <span>Plagiarism Group {group.id}</span>
-    //                        <Button variant="ghost" size="sm" onClick={() => toggleGroup(group.id)}>
-    //                            {expandedGroups.includes(group.id) ? (
-    //                                <ChevronDown className="h-4 w-4" />
-    //                            ) : (
-    //                                <ChevronRight className="h-4 w-4" />
-    //                            )}
-    //                        </Button>
-    //                    </CardTitle>
-    //                </CardHeader>
-    //                <CardContent>
-    //                    {expandedGroups.includes(group.id) && (
-    //                        <>
-    //                            {group.reference && (
-    //                                <div className="mb-4">
-    //                                    <h4 className="text-lg font-semibold mb-2">Reference Submission</h4>
-    //                                    <Accordion type="single" collapsible>
-    //                                        <AccordionItem value={group.reference.id}>
-    //                                            <AccordionTrigger>{group.reference.submitter}</AccordionTrigger>
-    //                                            <AccordionContent>
-    //                                                <pre className="bg-muted p-2 rounded-md overflow-x-auto">
-    //                                                    <code>{group.reference.code}</code>
-    //                                                </pre>
-    //                                            </AccordionContent>
-    //                                        </AccordionItem>
-    //                                    </Accordion>
-    //                                </div>
-    //                            )}
-    //                            <h4 className="text-lg font-semibold mb-2">Plagiarized Submissions</h4>
-    //                            <Accordion type="single" collapsible>
-    //                                {group.submissions.map((submission) => (
-    //                                    <AccordionItem key={submission.id} value={submission.id}>
-    //                                        <AccordionTrigger>{submission.submitter}</AccordionTrigger>
-    //                                        <AccordionContent>
-    //                                            <pre className="bg-muted p-2 rounded-md overflow-x-auto">
-    //                                                <code>{submission.code}</code>
-    //                                            </pre>
-    //                                        </AccordionContent>
-    //                                    </AccordionItem>
-    //                                ))}
-    //                            </Accordion>
-    //                        </>
-    //                    )}
-    //                </CardContent>
-    //            </Card>
-    //        ))}
-    //    </div>
-    //);
 }
