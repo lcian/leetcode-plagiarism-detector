@@ -21,7 +21,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "get",
-        "url": "/detectorRuns/bulk",
+        "url": "/api/v1/detectorRuns/bulk",
     }
 
 

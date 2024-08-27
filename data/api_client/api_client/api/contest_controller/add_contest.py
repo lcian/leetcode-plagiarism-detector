@@ -7,9 +7,9 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
+from ...models.contest import Contest
 from typing import cast
 from typing import Dict
-from ...models.contest import Contest
 
 
 
@@ -34,7 +34,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "post",
-        "url": "/contests",
+        "url": "/api/v1/contests",
         "params": params,
     }
 

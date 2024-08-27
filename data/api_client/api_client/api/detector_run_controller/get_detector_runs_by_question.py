@@ -29,7 +29,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "get",
-        "url": "/detectorRuns",
+        "url": "/api/v1/detectorRuns",
         "params": params,
     }
 

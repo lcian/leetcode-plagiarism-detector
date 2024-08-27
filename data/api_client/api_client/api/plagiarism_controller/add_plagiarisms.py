@@ -7,10 +7,10 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from typing import Dict
-from ...models.plagiarism_dto import PlagiarismDTO
 from typing import cast, List
+from ...models.plagiarism_dto import PlagiarismDTO
 from typing import cast
+from typing import Dict
 
 
 
@@ -28,7 +28,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "post",
-        "url": "/plagiarisms/bulk",
+        "url": "/api/v1/plagiarisms/bulk",
     }
 
     _body = []

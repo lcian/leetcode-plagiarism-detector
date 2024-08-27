@@ -7,10 +7,10 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from ...models.submission_dto import SubmissionDTO
-from typing import Dict
 from typing import cast, List
 from typing import cast
+from ...models.submission_dto import SubmissionDTO
+from typing import Dict
 
 
 
@@ -28,7 +28,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "post",
-        "url": "/submissions/bulk",
+        "url": "/api/v1/submissions/bulk",
     }
 
     _body = []

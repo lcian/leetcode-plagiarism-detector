@@ -7,9 +7,9 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from typing import Dict
 from ...models.detector_run_dto import DetectorRunDTO
 from typing import cast
+from typing import Dict
 
 
 
@@ -27,7 +27,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "post",
-        "url": "/detectorRuns",
+        "url": "/api/v1/detectorRuns",
     }
 
     _body = body.to_dict()

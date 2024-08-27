@@ -22,7 +22,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "get",
-        "url": "/detectorRuns/{id}".format(id=id,),
+        "url": "/api/v1/detectorRuns/{id}".format(id=id,),
     }
 
 

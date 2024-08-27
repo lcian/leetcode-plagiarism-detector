@@ -29,7 +29,7 @@ def _get_kwargs(
 
     _kwargs: Dict[str, Any] = {
         "method": "get",
-        "url": "/submissions/bulk",
+        "url": "/api/v1/submissions/bulk",
         "params": params,
     }
 
