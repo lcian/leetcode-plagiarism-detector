@@ -1,5 +1,9 @@
 set shell := ["bash", "-cu"]
 
+default:
+    just --list
+
+# generate Python bindings for the API
 generate-client:
     mvn -f backend verify -B
     .venv/bin/openapi-python-client generate --path backend/target/openapi.json --meta setup
@@ -9,3 +13,17 @@ generate-client:
     rm -Rf data/api_client
     mv api_client data
     cd data && .direnv/python-3.10/bin/./pip3 install -r requirements.txt
+
+# deploy API and frontend to Heroku
+deploy-web:
+    docker build . 
+    heroku container:push web
+    heroku container:release web
+
+# sync .env with Heroku
+sync-env:
+    heroku config:set $(cat .env | xargs)
+
+# deploy data pipelines to AWS
+deploy-data:
+    cd infrastructure && pnpm run cdk deploy --all --require-approval never
