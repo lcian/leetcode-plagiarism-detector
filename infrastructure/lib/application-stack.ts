@@ -274,6 +274,11 @@ export class ApplicationStack extends cdk.Stack {
                 stateName: "Process the provided contest or check for any new ones",
             })
                 .when(stepFunctions.Condition.not(stepFunctions.Condition.isPresent("$.contest-slug")), checkContests) // Manual trigger to process old contests
+                .otherwise(
+                    new stepFunctions.Pass(this, "ProcessContest", {
+                        stateName: "Process the provided contest directly",
+                    }),
+                )
                 .afterwards()
                 .next(
                     new stepFunctions.Choice(this, "Continue on contest", {
