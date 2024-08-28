@@ -116,6 +116,14 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                                                             <p className="my-auto">
                                                                 {timestampToDate(submission.date)}
                                                             </p>
+                                                            <Button variant="outline" size="sm" onClick={() => {}}>
+                                                                <FileCode className="h-4 w-4 mr-2" />
+                                                                Show code
+                                                            </Button>
+                                                            <Button variant="outline" size="sm" onClick={() => {}}>
+                                                                <GitCompareArrows className="h-4 w-4 mr-2" />
+                                                                Compare
+                                                            </Button>
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
