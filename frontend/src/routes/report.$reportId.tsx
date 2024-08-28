@@ -72,10 +72,9 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
             .then((res) => res.json())
             .then((fetchedPlagiarism) => {
                 setPlagiarism(fetchedPlagiarism);
-                console.log(fetchedPlagiarism);
                 setIsFetched(true);
             });
-    }, [isOpen]);
+    }, [isOpen, isFetched]);
 
     return (
         <CollapsibleContent>
@@ -202,29 +201,35 @@ function Report() {
             .then((res) => res.json())
             .then((detectorRun: DetectorRun) => {
                 setDetectorRun(detectorRun);
-                return fetch(`/api/v1/plagiarismsMetadata?detectorRunId=${detectorRun.id}`);
-            })
-            .then((res) => res.json())
-            .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
-                plagiarismsMetadata.sort((a, b) =>
-                    a.numberOfSubmissions < b.numberOfSubmissions ||
-                    (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
-                        ? 1
-                        : -1,
-                );
-                setPlagiarismsMetadata(plagiarismsMetadata);
-                return fetch(`/api/v1/question/${detectorRun!.questionId}`);
-            })
-            .then((res) => res.json())
-            .then((question) => {
-                setQuestion(question);
-                return fetch(`/api/v1/contest/${question.contestId}`);
-            })
-            .then((res) => res.json())
-            .then((contest) => {
-                setContest(contest);
             });
-    }, []);
+    }, [detectorRunId]);
+
+    useEffect(() => {
+        if (detectorRun !== undefined) {
+            fetch(`/api/v1/plagiarismsMetadata?detectorRunId=${detectorRun.id}`)
+                .then((res) => res.json())
+                .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
+                    plagiarismsMetadata.sort((a, b) =>
+                        a.numberOfSubmissions < b.numberOfSubmissions ||
+                        (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
+                            ? 1
+                            : -1,
+                    );
+                    console.log(detectorRun);
+                    setPlagiarismsMetadata(plagiarismsMetadata);
+                    return fetch(`/api/v1/question/${detectorRun.questionId}`);
+                })
+                .then((res) => res.json())
+                .then((question) => {
+                    setQuestion(question);
+                    return fetch(`/api/v1/contest/${question.contestId}`);
+                })
+                .then((res) => res.json())
+                .then((contest) => {
+                    setContest(contest);
+                });
+        }
+    }, [detectorRun]);
 
     return detectorRun && contest && question && plagiarismsMetadata ? (
         <div className="container mx-auto p-4">
