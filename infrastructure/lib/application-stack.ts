@@ -270,34 +270,30 @@ export class ApplicationStack extends cdk.Stack {
         // =============================================================================================================
 
         const stateMachine = new stepFunctions.StateMachine(this, "StateMachine", {
-            definition: checkContests.next(
-                new stepFunctions.Choice(this, "ProceedOnNewContest", {
-                    stateName: "Continue processing or stop",
-                })
-                    .when(
-                        stepFunctions.Condition.isPresent("$.contest-slug"),
-                        scrapeSubmissions.next(scrapeQuestions).next(processSubmissions),
-                    )
-                    .otherwise(
-                        new stepFunctions.Succeed(this, "NoNewContests", { stateName: "No new contests to process" }),
-                    ),
-            ),
-            comment: "State Machine that automatically detects new contests and processes them",
+            definition: new stepFunctions.Choice(this, "ProcessOrCheck", {
+                stateName: "Process the provided contest or check for any new ones",
+            })
+                .when(stepFunctions.Condition.not(stepFunctions.Condition.isPresent("$.contest-slug")), checkContests) // Manual trigger to process old contests
+                .afterwards()
+                .next(
+                    new stepFunctions.Choice(this, "Continue on contest", {
+                        stateName: "Continue processing if a contest is found",
+                    })
+                        .when(
+                            stepFunctions.Condition.isPresent("$.contest-slug"),
+                            scrapeSubmissions.next(scrapeQuestions).next(processSubmissions),
+                        )
+                        .otherwise(
+                            new stepFunctions.Succeed(this, "NoNewContests", {
+                                stateName: "No contest to process",
+                            }),
+                        ),
+                ),
             tracingEnabled: true,
         });
         stateMachine.grantTaskResponse(contestCheckerTask.taskRole);
         stateMachine.grantTaskResponse(submissionScraperTask.taskRole);
         stateMachine.grantTaskResponse(questionScraperTask.taskRole);
         stateMachine.grantTaskResponse(submissionProcessorTask.taskRole);
-
-        const backfillStateMachine = new stepFunctions.StateMachine(this, "BackfillStateMachine", {
-            definition: scrapeSubmissions.next(scrapeQuestions).next(processSubmissions),
-            comment: "State Machine to be triggered manually to process past contests",
-            tracingEnabled: true,
-        });
-        backfillStateMachine.grantTaskResponse(contestCheckerTask.taskRole);
-        backfillStateMachine.grantTaskResponse(submissionScraperTask.taskRole);
-        backfillStateMachine.grantTaskResponse(questionScraperTask.taskRole);
-        backfillStateMachine.grantTaskResponse(submissionProcessorTask.taskRole);
     }
 }

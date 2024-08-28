@@ -5,7 +5,7 @@ import "@/index.css";
 import { timestampToDate } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink, FileCode, GitCompareArrows } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/report/$reportId")({
@@ -116,14 +116,6 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                                                             <p className="my-auto">
                                                                 {timestampToDate(submission.date)}
                                                             </p>
-                                                            <Button variant="outline" size="sm" onClick={() => {}}>
-                                                                <FileCode className="h-4 w-4 mr-2" />
-                                                                Show code
-                                                            </Button>
-                                                            <Button variant="outline" size="sm" onClick={() => {}}>
-                                                                <GitCompareArrows className="h-4 w-4 mr-2" />
-                                                                Compare
-                                                            </Button>
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
