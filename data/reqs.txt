@@ -1,0 +1,6 @@
+python-dotenv==1.0.1
+requests==2.31.0
+beautifulsoup4==4.12.3
+random-user-agent==1.0.1
+copydetect==0.5.0
+./api_client

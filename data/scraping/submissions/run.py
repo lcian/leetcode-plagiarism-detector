@@ -6,6 +6,7 @@ import os
 import sys
 import urllib.request
 from random import randint
+from threading import Event, Thread
 from time import sleep
 from typing import List, Tuple
 
@@ -199,7 +200,7 @@ def get_all_submissions(contest_slug: str, lookup_questions: List[QuestionDTO]) 
     return (contest, submissions)
 
 
-def process_contest(contest_slug: str):
+def process_contest(contest_slug: str) -> List[str]:
     logger.info(f"Processing contest {contest_slug}")
     questions = get_questions(contest_slug)
     questions = questions[2:]
@@ -209,56 +210,38 @@ def process_contest(contest_slug: str):
         save_api(contest, questions, submissions)
     else:
         save_local(submissions)
+    return [question.name for question in questions]
 
-    questions_queue_name = os.getenv("QUESTIONS_QUEUE_NAME")
-    if not questions_queue_name:
-        logger.error("Could not find environment variable QUESTIONS_QUEUE_NAME")
-        return
-    account = boto3.client("sts").get_caller_identity().get("Account")
-    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
-    sqs = boto3.client("sqs")
-    queue_url = f"https://sqs.{region}.amazonaws.com/{account}/{questions_queue_name}"
-    sqs.send_message(
-        QueueUrl=queue_url,
-        MessageBody=json.dumps(
-            {
-                "contest-slug": contest_slug,
-                "question_names": [question.name for question in questions],
-            }
-        ),
-    )
+
+def setup_heartbeat():
+    stopped = Event()
+
+    def loop():
+        while not stopped.wait(60):
+            client = boto3.client("stepfunctions")
+            client.send_task_heartbeat(
+                taskToken=os.environ["TASK_TOKEN"],
+            )
+
+    Thread(target=loop, daemon=True).start()
+    return stopped.set
 
 
 def handler(event, context):
-    contest_slug = os.getenv("CONTEST_SLUG")
-    if contest_slug:
-        logger.info("Found environment variable CONTEST_SLUG, processing contest directly")
-        process_contest(contest_slug)
-        return {}
-    logger.info("Could not find environment variable CONTEST_SLUG, reading it from the SQS queue")
-
-    queue_name = os.getenv("QUEUE_NAME")
-    if not queue_name:
-        logger.error("Could not find environment variable QUEUE_NAME")
-        return {}
-    account = boto3.client("sts").get_caller_identity().get("Account")
-    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
-    sqs = boto3.client("sqs")
-
-    queue_url = f"https://sqs.{region}.amazonaws.com/{account}/{queue_name}"
-    response = sqs.receive_message(QueueUrl=queue_url)
-    if "Messages" not in response:
-        logger.error("Could not find any message in the queue")
-        return {}
-    messages = response["Messages"]
-    for message in messages:
-        body = json.loads(message["Body"])
-        contest_slug = body["contest-slug"]
-        process_contest(contest_slug)
-        logger.info(f"Deleting message {message}")
-        receipt_handle = message["ReceiptHandle"]
-        sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-    return {}
+    contest_slug = os.environ["CONTEST_SLUG"]
+    if os.environ.get("TASK_TOKEN"):
+        setup_heartbeat()
+    question_names = process_contest(contest_slug)
+    if os.environ.get("TASK_TOKEN"):
+        result = {
+            "contest-slug": contest_slug,
+            "question-names": ",".join(question_names),
+        }
+        client = boto3.client("stepfunctions")
+        client.send_task_success(
+            taskToken=os.environ["TASK_TOKEN"],
+            output=json.dumps(result),
+        )
 
 
 if __name__ == "__main__":

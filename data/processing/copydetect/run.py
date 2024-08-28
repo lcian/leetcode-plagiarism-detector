@@ -4,6 +4,7 @@ import math
 import os
 import tempfile
 from collections import defaultdict
+from threading import Event, Thread
 from types import SimpleNamespace
 from typing import List, Optional
 
@@ -147,41 +148,31 @@ def process_contest(contest_slug: str):
         )
         submissions = json.loads(submissions_response.content.decode())
         submissions = [Submission.from_dict(submission) for submission in submissions]
-        print(question)
-        print(len(submissions))
         process_question(question, submissions)
 
 
+def setup_heartbeat():
+    stopped = Event()
+
+    def loop():
+        while not stopped.wait(60):
+            client = boto3.client("stepfunctions")
+            client.send_task_heartbeat(
+                taskToken=os.environ["TASK_TOKEN"],
+            )
+
+    Thread(target=loop, daemon=True).start()
+    return stopped.set
+
+
 def handler(event, context):
-    contest_slug = os.getenv("CONTEST_SLUG")
-    if contest_slug:
-        logger.info("Found environment variable CONTEST_SLUG, processing contest directly")
-        process_contest(contest_slug)
-        return {}
-    logger.info("Could not find environment variable CONTEST_SLUG, reading it from the SQS queue")
-
-    queue_name = os.getenv("QUEUE_NAME")
-    if not queue_name:
-        logger.error("Could not find environment variable QUEUE_NAME")
-        return {}
-    account = boto3.client("sts").get_caller_identity().get("Account")
-    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
-    sqs = boto3.client("sqs")
-
-    queue_url = f"https://sqs.{region}.amazonaws.com/{account}/{queue_name}"
-    response = sqs.receive_message(QueueUrl=queue_url)
-    if "Messages" not in response:
-        logger.error("Could not find any message in the queue")
-        return {}
-    messages = response["Messages"]
-    for message in messages:
-        body = json.loads(message["Body"])
-        contest_slug = body["contest-slug"]
-        process_contest(contest_slug)
-        logger.info(f"Deleting message {message}")
-        receipt_handle = message["ReceiptHandle"]
-        sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-    return {}
+    contest_slug = os.environ["CONTEST_SLUG"]
+    if os.environ.get("TASK_TOKEN"):
+        setup_heartbeat()
+    process_contest(contest_slug)
+    if os.environ.get("TASK_TOKEN"):
+        client = boto3.client("stepfunctions")
+        client.send_task_success(taskToken=os.environ["TASK_TOKEN"], output="{}")
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@
         ]
     },
     "context": {
-        "api-url": "https://desirable-truth-production.up.railway.app/",
+        "api-base-url": "https://leetcode-plagiarism-detector-1a267dde2df3.herokuapp.com/",
         "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
         "@aws-cdk/core:checkSecretUsage": true,
         "@aws-cdk/core:target-partitions": [
