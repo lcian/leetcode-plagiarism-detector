@@ -15,6 +15,7 @@
 <img alt="React" src="https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB" />
 <img alt="TailwindCSS" src="https://img.shields.io/badge/Tailwind%20CSS-%2338B2AC.svg?logo=tailwind-css&logoColor=white" />
 <img alt="separator" height="20" src="https://github.com/user-attachments/assets/5a8e5260-544e-4641-946a-46c2c75721f3" />
+<img alt="Postgres" src="https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white" />
 <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff" />
 <img alt="AWS" src="https://img.shields.io/badge/AWS-%23FF9900.svg?logo=amazon-web-services&logoColor=white" />
 </p>
@@ -33,16 +34,36 @@
 
 ## 📍 Overview
 
+LeetCode Plagiarism Detector is an automated system to scrape, detect, and report plagiarized submissions in LeetCode Contests.
+
+#### ✨ Features
+
+- Automated scraping of submissions for new LeetCode contests (Python scripts)
+- Plagiarism detection using advanced algorithms (currently based on <a href="https://github.com/blingenf/copydetect">copydetect</a>, more detectors coming soon)
+- REST API for storing and retrieving plagiarism reports (Spring Boot + Hibernate + Postgres as the underlying database)
+- User-friendly interface for reviewing and reporting plagiarism (React + TailwindCSS)
+- Scalable and cost-effective deployment (AWS Fargate spot instances + StepFunctions)
+
 ## 📐 Architecture
 
 ![architecture](https://github.com/user-attachments/assets/bfc612ab-927b-4e97-81a3-8345a630db8d)
 
 ## 🚀 Development
 
-#### 🔖 Prerequisites
+Coming soon.
 
-#### 📦 Setup
+### 🔖 Prerequisites
 
-#### 🤖 Usage
+Coming soon.
 
-#### 🪂 Deployment
+### 📦 Setup
+
+Coming soon.
+
+### 🤖 Usage
+
+Coming soon.
+
+## 🪂 Deployment
+
+Coming soon.
