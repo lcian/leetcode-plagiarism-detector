@@ -156,7 +156,7 @@ export class ApplicationStack extends cdk.Stack {
                 },
             ],
         });
-        scrapeSubmissions.addRetry({ errors: ["States.ALL"], interval: cdk.Duration.hours(1), maxAttempts: 10 });
+        scrapeSubmissions.addRetry({ errors: ["States.ALL"], interval: cdk.Duration.hours(1), maxAttempts: 4 });
 
         // =============================================================================================================
         // SCRAPING -- QUESTIONS
@@ -219,8 +219,8 @@ export class ApplicationStack extends cdk.Stack {
         // =============================================================================================================
 
         const submissionProcessorTask = new ecs.FargateTaskDefinition(this, "SubmissionProcessorTaskDefinition", {
-            memoryLimitMiB: 1024,
-            cpu: 512,
+            memoryLimitMiB: 4096,
+            cpu: 1024,
         });
         submissionProcessorTask.addContainer("SubmissionProcessorTaskDefinition", {
             image: dataContainerImage,
