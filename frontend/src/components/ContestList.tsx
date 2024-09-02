@@ -11,6 +11,7 @@ import { LoadingSpinner } from "./ui/spinner";
 interface DetectorRun {
     id: number;
     detector: number;
+    plagiarismGroupsCount: number;
 }
 
 interface DetectorRunListProps {
@@ -37,7 +38,6 @@ const DetectorRunList = (props: DetectorRunListProps) => {
     return (
         <CollapsibleContent>
             {!isFetched ? (
-                //<div className="pl-6 mt-2 space-y-1 ml-5">Loading...</div>
                 <LoadingSpinner className="mt-2 space-y-1 ml-5 mb-4" />
             ) : (
                 <ul className="pl-6 mt-2 space-y-1">
@@ -51,7 +51,15 @@ const DetectorRunList = (props: DetectorRunListProps) => {
                                 className="text-blue-500 hover:underline flex items-center py-1"
                             >
                                 <BarChart className="h-4 w-4 mr-2 shrink-0" />
-                                <span>{detectorRun.detector}</span>
+                                <span>
+                                    {detectorRun.detector} (
+                                    {detectorRun.plagiarismGroupsCount === 0
+                                        ? "no plagiarism groups"
+                                        : detectorRun.plagiarismGroupsCount === 1
+                                          ? "1 plagiarism group"
+                                          : `${detectorRun.plagiarismGroupsCount} plagiarism groups`}
+                                    )
+                                </span>
                             </Link>
                         </li>
                     ))}

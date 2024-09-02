@@ -1,12 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import "@/index.css";
-import { timestampToDate } from "@/lib/utils";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
+import { cn, timestampToDate } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink, GitCompare } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 
 export const Route = createFileRoute("/report/$reportId")({
     loader: ({ params: { reportId } }) => parseInt(reportId),
@@ -22,14 +32,29 @@ export const Route = createFileRoute("/report/$reportId")({
 interface SubmissionProps {
     isOpen: boolean;
     submission: Submission;
+    className: string;
 }
 
-const Submission = ({ isOpen, submission }: SubmissionProps) => {
+const SubmissionCode = ({ isOpen, submission, className }: SubmissionProps) => {
+    const submissionToSyntaxHighlighterLanguage = (language: string) => {
+        switch (language) {
+            case "python2":
+                return "python";
+            case "python3":
+                return "python";
+            default:
+                return language;
+        }
+    };
     return (
         isOpen && (
-            <pre className="bg-muted p-4 rounded-md overflow-x-auto">
-                <code>{submission.code}</code>
-            </pre>
+            <ScrollArea className={cn("w-full rounded-md border", className)}>
+                <pre className="bg-muted p-4 rounded-md">
+                    <SyntaxHighlighter language={submissionToSyntaxHighlighterLanguage(submission.language)}>
+                        {submission.code}
+                    </SyntaxHighlighter>
+                </pre>
+            </ScrollArea>
         )
     );
 };
@@ -56,13 +81,98 @@ interface Plagiarism {
     submissions: Submission[];
 }
 
+interface ComparisonDialogProps {
+    contestSlug: string;
+    comparedSubmissions: Submission[];
+    callback: VoidFunction | undefined;
+}
+
+const ComparisonDialog = ({ contestSlug, comparedSubmissions, callback }: ComparisonDialogProps) => {
+    const [isOpen, setOpen] = useState<boolean>(true);
+
+    const toggleOpenAndCallback = () => {
+        setOpen((prev) => !prev);
+        if (callback !== undefined) {
+            callback!();
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={toggleOpenAndCallback}>
+            <DialogContent className="min-w-[80%] w-[80%] h-[90%]">
+                <DialogHeader>
+                    <DialogTitle>Compare submissions</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                    {comparedSubmissions.map((submission) => (
+                        <div key={submission.id} className="flex flex-col w-full h-auto">
+                            <Card className="mb-4 mx-2">
+                                <CardHeader className="p-0">
+                                    <CardTitle>
+                                        <Button variant="ghost" className="w-full h-auto py-4 px-6">
+                                            <div className="flex justify-between w-full">
+                                                <div className="columns-2 flex gap-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `https://leetcode.com/${submission.userSlug}`,
+                                                                "_blank",
+                                                            )
+                                                        }
+                                                    >
+                                                        <CircleUserRound className="h-4 w-4 mr-2" />
+                                                        {submission.userSlug}
+                                                    </Button>
+                                                    <p className="my-auto">{timestampToDate(submission.date)}</p>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `https://leetcode.com/contest/${contestSlug}/ranking/${submission.page}/`,
+                                                                "_blank",
+                                                            )
+                                                        }
+                                                    >
+                                                        <ExternalLink className="h-4 w-4 mr-2" />
+                                                        Contest page
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </Button>
+                                    </CardTitle>
+                                </CardHeader>
+                                <SubmissionCode isOpen={true} submission={submission} className="h-[60rem]" />
+                            </Card>
+                        </div>
+                    ))}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
     const [isFetched, setIsFetched] = useState<boolean>(false);
     const [plagiarism, setPlagiarism] = useState<Plagiarism | undefined>(undefined);
     const [expandedSubmissions, setExpandedSubmissions] = useState<number[]>([]);
+    const [comparedSubmissions, setComparedSubmissions] = useState<number[]>([]);
 
     const toggleGroup = (id: number) =>
         setExpandedSubmissions((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]));
+
+    const toggleCompared = (id: number) => {
+        setComparedSubmissions((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]));
+    };
+
+    const handleInternalButtonClick = (e: React.MouseEvent, action: () => void) => {
+        e.stopPropagation();
+        action();
+    };
 
     useEffect(() => {
         if (!isOpen || isFetched) {
@@ -82,6 +192,15 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                 <LoadingSpinner className="mt-2 space-y-1 ml-5 mb-4" />
             ) : (
                 <>
+                    {comparedSubmissions.length === 2 && (
+                        <ComparisonDialog
+                            contestSlug={contestSlug}
+                            comparedSubmissions={plagiarism!.submissions.filter((sub) =>
+                                comparedSubmissions.includes(sub.id),
+                            )}
+                            callback={() => setComparedSubmissions([])}
+                        />
+                    )}
                     <hr className="mb-2" />
                     <ul className="space-y-2">
                         {plagiarism?.submissions.map((submission) => (
@@ -94,40 +213,61 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                                         <CardHeader className="p-0">
                                             <CollapsibleTrigger asChild>
                                                 <CardTitle>
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="w-full justify-between items-center h-auto py-4 px-6"
-                                                    >
-                                                        <div className="flex flex-row space-x-4">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() =>
-                                                                    window.open(
-                                                                        `https://leetcode.com/${submission.userSlug}`,
-                                                                        "_blank",
-                                                                    )
-                                                                }
-                                                            >
-                                                                <CircleUserRound className="h-4 w-4 mr-2" />
-                                                                {submission.userSlug}
-                                                            </Button>
-                                                            <p className="my-auto">
-                                                                {timestampToDate(submission.date)}
-                                                            </p>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() =>
-                                                                    window.open(
-                                                                        `https://leetcode.com/contest/${contestSlug}/ranking/${submission.page}/`,
-                                                                        "_blank",
-                                                                    )
-                                                                }
-                                                            >
-                                                                <ExternalLink className="h-4 w-4 mr-2" />
-                                                                Contest page
-                                                            </Button>
+                                                    <Button variant="ghost" className="w-full h-auto py-4 px-6">
+                                                        <div className="flex justify-between w-full">
+                                                            <div className="flex gap-4">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) =>
+                                                                        handleInternalButtonClick(e, () => {
+                                                                            window.open(
+                                                                                `https://leetcode.com/${submission.userSlug}`,
+                                                                                "_blank",
+                                                                            );
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    <CircleUserRound className="h-4 w-4 mr-2" />
+                                                                    {submission.userSlug}
+                                                                </Button>
+                                                                <p className="my-auto">
+                                                                    {timestampToDate(submission.date)}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-4">
+                                                                <Button
+                                                                    variant={
+                                                                        comparedSubmissions.includes(submission.id)
+                                                                            ? "default"
+                                                                            : "outline"
+                                                                    }
+                                                                    size="sm"
+                                                                    onClick={(e) =>
+                                                                        handleInternalButtonClick(e, () => {
+                                                                            toggleCompared(submission.id);
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    <GitCompare className="h-4 w-4 mr-2" />
+                                                                    Compare
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) =>
+                                                                        handleInternalButtonClick(e, () => {
+                                                                            window.open(
+                                                                                `https://leetcode.com/contest/${contestSlug}/ranking/${submission.page}/`,
+                                                                                "_blank",
+                                                                            );
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                                                    Contest page
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                         {expandedSubmissions.includes(submission.id) ? (
                                                             <ChevronDown className="h-4 w-4 shrink-0 ml-2" />
@@ -138,9 +278,10 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                                                 </CardTitle>
                                             </CollapsibleTrigger>
                                         </CardHeader>
-                                        <Submission
+                                        <SubmissionCode
                                             isOpen={expandedSubmissions.includes(submission.id)}
                                             submission={submission}
+                                            className="h-[50rem]"
                                         />
                                     </Card>
                                 </Collapsible>
@@ -211,11 +352,10 @@ function Report() {
                 .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
                     plagiarismsMetadata.sort((a, b) =>
                         a.numberOfSubmissions < b.numberOfSubmissions ||
-                        (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
+                            (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
                             ? 1
                             : -1,
                     );
-                    console.log(detectorRun);
                     setPlagiarismsMetadata(plagiarismsMetadata);
                     return fetch(`/api/v1/question/${detectorRun.questionId}`);
                 })
