@@ -22,7 +22,7 @@ deploy-web:
 
 # sync .env with Heroku
 sync-env:
-    heroku config:set $(cat .env | xargs)
+    heroku config:set $(cat .env | grep -v '^#' | grep -Ev '^ADDRESS|^PORT' | xargs)
 
 # deploy data pipelines to AWS
 deploy-data:
