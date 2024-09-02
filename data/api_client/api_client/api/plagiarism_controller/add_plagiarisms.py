@@ -7,10 +7,10 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from typing import cast, List
-from ...models.plagiarism_dto import PlagiarismDTO
 from typing import cast
 from typing import Dict
+from ...models.plagiarism_dto import PlagiarismDTO
+from typing import cast, List
 
 
 

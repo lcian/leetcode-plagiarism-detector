@@ -106,6 +106,9 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
+                </configuration>
             </plugin>
         </plugins>
     </build>

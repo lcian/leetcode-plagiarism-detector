@@ -5,7 +5,7 @@ default:
 
 # generate Python bindings for the API
 generate-client:
-    mvn -f backend verify -B
+    mvn -f backend springdoc-openapi:1.1:generate -B
     .venv/bin/openapi-python-client generate --path backend/target/openapi.json --meta setup
     mv open-api-definition-client/open_api_definition_client open-api-definition-client/api_client
     mv open-api-definition-client api_client

@@ -28,6 +28,7 @@ class DetectorRun:
             parameters (Union[Unset, str]):
             reference_submission_id (Union[Unset, int]):
             question_id (Union[Unset, int]):
+            plagiarism_groups_count (Union[Unset, int]):
      """
 
     id: Union[Unset, int] = UNSET
@@ -35,6 +36,7 @@ class DetectorRun:
     parameters: Union[Unset, str] = UNSET
     reference_submission_id: Union[Unset, int] = UNSET
     question_id: Union[Unset, int] = UNSET
+    plagiarism_groups_count: Union[Unset, int] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
 
@@ -48,6 +50,8 @@ class DetectorRun:
         reference_submission_id = self.reference_submission_id
 
         question_id = self.question_id
+
+        plagiarism_groups_count = self.plagiarism_groups_count
 
 
         field_dict: Dict[str, Any] = {}
@@ -64,6 +68,8 @@ class DetectorRun:
             field_dict["referenceSubmissionId"] = reference_submission_id
         if question_id is not UNSET:
             field_dict["questionId"] = question_id
+        if plagiarism_groups_count is not UNSET:
+            field_dict["plagiarismGroupsCount"] = plagiarism_groups_count
 
         return field_dict
 
@@ -82,12 +88,15 @@ class DetectorRun:
 
         question_id = d.pop("questionId", UNSET)
 
+        plagiarism_groups_count = d.pop("plagiarismGroupsCount", UNSET)
+
         detector_run = cls(
             id=id,
             detector=detector,
             parameters=parameters,
             reference_submission_id=reference_submission_id,
             question_id=question_id,
+            plagiarism_groups_count=plagiarism_groups_count,
         )
 
 
