@@ -1,3 +1,4 @@
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,6 +18,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink, GitCompare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import * as coy from "react-syntax-highlighter/dist/cjs/styles/prism/coy";
+import * as dracula from "react-syntax-highlighter/dist/cjs/styles/prism/dracula";
+import * as materialDark from "react-syntax-highlighter/dist/cjs/styles/prism/material-dark";
 
 export const Route = createFileRoute("/report/$reportId")({
     loader: ({ params: { reportId } }) => parseInt(reportId),
@@ -36,6 +40,8 @@ interface SubmissionProps {
 }
 
 const SubmissionCode = ({ isOpen, submission, className }: SubmissionProps) => {
+    const { theme, setTheme } = useTheme();
+
     const submissionToSyntaxHighlighterLanguage = (language: string) => {
         switch (language) {
             case "python2":
@@ -50,7 +56,10 @@ const SubmissionCode = ({ isOpen, submission, className }: SubmissionProps) => {
         isOpen && (
             <ScrollArea className={cn("w-full rounded-md border", className)}>
                 <pre className="bg-muted p-4 rounded-md">
-                    <SyntaxHighlighter language={submissionToSyntaxHighlighterLanguage(submission.language)}>
+                    <SyntaxHighlighter
+                        language={submissionToSyntaxHighlighterLanguage(submission.language)}
+                        style={theme === "light" ? coy.default : materialDark.default}
+                    >
                         {submission.code}
                     </SyntaxHighlighter>
                 </pre>
@@ -352,7 +361,7 @@ function Report() {
                 .then((plagiarismsMetadata: PlagiarismMetadata[]) => {
                     plagiarismsMetadata.sort((a, b) =>
                         a.numberOfSubmissions < b.numberOfSubmissions ||
-                            (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
+                        (a.numberOfSubmissions === b.numberOfSubmissions && a.language < b.language)
                             ? 1
                             : -1,
                     );
