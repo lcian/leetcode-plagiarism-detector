@@ -48,6 +48,9 @@ public class DetectorRun {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Integer getPlagiarismGroupsCount() {
+        if (this.plagiarisms == null){
+            return null;
+        }
         return this.plagiarisms.size();
     }
 }
