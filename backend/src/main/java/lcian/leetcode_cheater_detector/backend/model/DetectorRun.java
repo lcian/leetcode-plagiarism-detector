@@ -45,4 +45,9 @@ public class DetectorRun {
     public Integer getQuestionId(){
         return this.question.getId();
     }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public Integer getPlagiarismGroupsCount() {
+        return this.plagiarisms.size();
+    }
 }
