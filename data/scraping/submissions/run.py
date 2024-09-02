@@ -46,9 +46,9 @@ HEADERS = {
     "referer": "https://leetcode.com/contest",
 }
 
-PAGE_LIMIT = int(os.getenv("PAGE_LIMIT") or 2**32)
+PAGE_LIMIT = int(os.getenv("PAGE_LIMIT") or 100)
 NUM_WORKERS = 10
-MAX_RETRIES = 20
+MAX_RETRIES = 50
 REQUEST_TIMEOUT_SEC = 15
 
 OXYLABS_CREDENTIALS = os.getenv("OXYLABS_CREDENTIALS")
