@@ -2,14 +2,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import "@/index.css";
@@ -19,7 +12,6 @@ import { ChevronDown, ChevronRight, CircleUserRound, ExternalLink, GitCompare } 
 import { useEffect, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import * as coy from "react-syntax-highlighter/dist/cjs/styles/prism/coy";
-import * as dracula from "react-syntax-highlighter/dist/cjs/styles/prism/dracula";
 import * as materialDark from "react-syntax-highlighter/dist/cjs/styles/prism/material-dark";
 
 export const Route = createFileRoute("/report/$reportId")({
@@ -40,7 +32,7 @@ interface SubmissionProps {
 }
 
 const SubmissionCode = ({ isOpen, submission, className }: SubmissionProps) => {
-    const { theme, setTheme } = useTheme();
+    const { theme } = useTheme();
 
     const submissionToSyntaxHighlighterLanguage = (language: string) => {
         switch (language) {
@@ -193,7 +185,7 @@ const PlagiarismGroup = ({ contestSlug, isOpen, id }: PlagiarismGroupProps) => {
                 setPlagiarism(fetchedPlagiarism);
                 setIsFetched(true);
             });
-    }, [isOpen, isFetched]);
+    }, [isOpen, isFetched, id]);
 
     return (
         <CollapsibleContent>
