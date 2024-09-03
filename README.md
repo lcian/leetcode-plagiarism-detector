@@ -36,13 +36,24 @@
 
 LeetCode Plagiarism Detector is an automated system to scrape, detect, and report plagiarized submissions in LeetCode Contests.
 
+#### ❓ Motivation
+
+In the last few months, LeetCode's DSA contests have seen a large increase in plagiarism.
+This has diminished the credibility of the contest rankings and the overall experience for serious participants.
+[[1](https://leetcode.com/discuss/general-discussion/5478175/On-solving-the-cheating-epidemic%3A-Opinion/)]
+[[2](https://leetcode.com/discuss/feedback/4144304/(LC-Replied)-So-frustrated-because-of-cheating-in-contest/)]
+[[3](https://leetcode.com/discuss/feedback/4812899/What-does-Leetcode-actually-do-about-cheaters/)]
+
+Leetcode Plagiarism Detector aims to help the LeetCode community to solve this problem by providing open source, automated plagiarism reports.
+Its web interface makes it easy for users to identify and report cheaters, so that LeetCode can verify instances of plagiarism and take appropriate action.
+
 #### ✨ Features
 
 - Automated scraping of submissions for new LeetCode contests (Python scripts)
 - Plagiarism detection using advanced algorithms (currently based on <a href="https://github.com/blingenf/copydetect">copydetect</a>, more detectors coming soon)
 - REST API for storing and retrieving plagiarism reports (Spring Boot + Hibernate + Postgres as the underlying database)
-- User-friendly interface for reviewing and reporting plagiarism (React + TailwindCSS)
-- Scalable and cost-effective deployment (AWS Fargate spot instances + StepFunctions)
+- User-friendly web interface for reviewing and reporting plagiarism (React + TailwindCSS)
+- Scalable and cost-effective deployment (AWS Fargate spot instances + StepFunctions + Heroku)
 
 ## 📐 Architecture
 
