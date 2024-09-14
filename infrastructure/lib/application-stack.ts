@@ -300,5 +300,10 @@ export class ApplicationStack extends cdk.Stack {
         stateMachine.grantTaskResponse(submissionScraperTask.taskRole);
         stateMachine.grantTaskResponse(questionScraperTask.taskRole);
         stateMachine.grantTaskResponse(submissionProcessorTask.taskRole);
+
+        const cronSchedule = new events.Rule(this, "CronSchedule", {
+            schedule: events.Schedule.cron({ minute: "0", hour: "*/1" }),
+            targets: [new eventsTargets.SfnStateMachine(stateMachine)],
+        });
     }
 }
