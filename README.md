@@ -20,18 +20,6 @@
 <img alt="AWS" src="https://img.shields.io/badge/AWS-%23FF9900.svg?logo=amazon-web-services&logoColor=white" />
 </p>
 
-##### 🔗 Table of Contents
-
-- [📍 Overview](#-overview)
-- [📐 Architecture](#-architecture)
-- [🚀 Development](#-development)
-  - [🔖 Prerequisites](#-prerequisites)
-  - [📦 Installation](#-installation)
-  - [🤖 Usage](#-usage)
-- [🪂 Deployment](#-deployment)
-
----
-
 ## 📍 Overview
 
 LeetCode Plagiarism Detector is an automated system to scrape, detect, and report plagiarized submissions in LeetCode Contests.
@@ -59,21 +47,6 @@ Its web interface makes it easy for users to identify and report cheaters, so th
 
 ![architecture](https://github.com/user-attachments/assets/bfc612ab-927b-4e97-81a3-8345a630db8d)
 
-## 🚀 Development
-
-Coming soon.
-
-### 🔖 Prerequisites
-
-Coming soon.
-
-### 📦 Setup
-
-Coming soon.
-
-### 🤖 Usage
-
-Coming soon.
 
 ## 🪂 Deployment
 
